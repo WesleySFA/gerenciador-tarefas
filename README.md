@@ -108,7 +108,7 @@ gerenciador-tarefas/
 
 ## 👥 Equipe
 
-- Wesley Santos de Souza Araujo (WesleySFA)
+- Wesley Silva Ferreira Amaro (WesleySFA)
 
 ## 📄 Licença
 
