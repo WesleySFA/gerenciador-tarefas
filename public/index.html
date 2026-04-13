@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -12,9 +13,20 @@
 <h1>Gerenciador de Tarefas</h1>
 <p>Organize suas atividades</p>
 </header>
+<div class="search-box">
+<input id="busca" placeholder="Buscar tarefas..." oninput="filtrarBusca()">
+</div>
 <section class="form">
 <input id="titulo" placeholder="Título da tarefa">
 <input id="descricao" placeholder="Descrição da tarefa">
+<div class="form-row">
+<select id="prioridade">
+<option value="baixa">Prioridade Baixa</option>
+<option value="media" selected>Prioridade Média</option>
+<option value="alta">Prioridade Alta</option>
+</select>
+<input type="date" id="prazo" placeholder="Prazo">
+</div>
 <select id="status">
 <option value="pendente">Pendente</option>
 <option value="andamento">Em Andamento</option>
@@ -29,7 +41,7 @@
 <button class="filter-btn" data-filter="concluida">Concluída</button>
 </div>
 <section>
-<h2>Minhas tarefas</h2>
+<h2>Minhas tarefas <span id="contador"></span></h2>
 <ul id="lista"></ul>
 </section>
 </div>

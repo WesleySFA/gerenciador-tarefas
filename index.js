@@ -25,6 +25,8 @@ async function initDB() {
                 status VARCHAR(50) DEFAULT 'pendente',
                 done TINYINT DEFAULT 0,
                 ordem INT DEFAULT 0,
+                prioridade VARCHAR(20) DEFAULT 'media',
+                prazo DATETIME DEFAULT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 data_conclusao DATETIME DEFAULT NULL
             )
@@ -32,9 +34,15 @@ async function initDB() {
         
         try {
             await connection.query("ALTER TABLE tasks ADD COLUMN ordem INT DEFAULT 0")
-        } catch (e) {
-            // Coluna já existe
-        }
+        } catch (e) {}
+
+        try {
+            await connection.query("ALTER TABLE tasks ADD COLUMN prioridade VARCHAR(20) DEFAULT 'media'")
+        } catch (e) {}
+
+        try {
+            await connection.query("ALTER TABLE tasks ADD COLUMN prazo DATETIME DEFAULT NULL")
+        } catch (e) {}
         
         console.log("Tabela 'tasks' atualizada com sucesso")
     } finally {
@@ -43,7 +51,7 @@ async function initDB() {
 }
 app.get('/tasks', async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT * FROM tasks ORDER BY ordem ASC, created_at DESC")
+        const [rows] = await pool.query("SELECT * FROM tasks ORDER BY FIELD(prioridade, 'alta', 'media', 'baixa'), ordem ASC, created_at DESC")
         res.json(rows.map(row => ({
             id: row.id.toString(),
             titulo: row.titulo,
@@ -51,6 +59,8 @@ app.get('/tasks', async (req, res) => {
             status: row.status,
             done: row.done === 1,
             ordem: row.ordem,
+            prioridade: row.prioridade,
+            prazo: row.prazo,
             data_criacao: row.created_at,
             data_conclusao: row.data_conclusao
         })))
@@ -59,15 +69,15 @@ app.get('/tasks', async (req, res) => {
     }
 })
 app.post('/tasks', async (req, res) => {
-    const { titulo, descricao, status } = req.body
+    const { titulo, descricao, status, prioridade, prazo } = req.body
     
     try {
         const [maxOrdem] = await pool.query("SELECT MAX(ordem) as max FROM tasks")
         const novaOrdem = (maxOrdem[0].max || 0) + 1
         
         const [result] = await pool.query(
-            "INSERT INTO tasks (titulo, descricao, status, done, ordem) VALUES (?, ?, ?, ?, ?)",
-            [titulo, descricao || "", status || "pendente", status === "concluida" ? 1 : 0, novaOrdem]
+            "INSERT INTO tasks (titulo, descricao, status, done, ordem, prioridade, prazo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [titulo, descricao || "", status || "pendente", status === "concluida" ? 1 : 0, novaOrdem, prioridade || "media", prazo || null]
         )
         
         const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [result.insertId])
@@ -80,6 +90,8 @@ app.post('/tasks', async (req, res) => {
             status: row.status,
             done: row.done === 1,
             ordem: row.ordem,
+            prioridade: row.prioridade,
+            prazo: row.prazo,
             data_criacao: row.created_at,
             data_conclusao: row.data_conclusao
         })
@@ -88,12 +100,12 @@ app.post('/tasks', async (req, res) => {
     }
 })
 app.put('/tasks/:id', async (req, res) => {
-    const { status, ordem, acao } = req.body
+    const { status, ordem, acao, prioridade, prazo } = req.body
     const id = req.params.id
     
     try {
         if (acao === 'mover_cima') {
-            const [tasks] = await pool.query("SELECT * FROM tasks ORDER BY ordem ASC")
+            const [tasks] = await pool.query("SELECT * FROM tasks ORDER BY FIELD(prioridade, 'alta', 'media', 'baixa'), ordem ASC")
             const currentIndex = tasks.findIndex(t => t.id.toString() === id)
             
             if (currentIndex > 0) {
@@ -112,13 +124,15 @@ app.put('/tasks/:id', async (req, res) => {
                 status: rows[0].status,
                 done: rows[0].done === 1,
                 ordem: rows[0].ordem,
+                prioridade: rows[0].prioridade,
+                prazo: rows[0].prazo,
                 data_criacao: rows[0].created_at,
                 data_conclusao: rows[0].data_conclusao
             } : {})
         }
         
         if (acao === 'mover_baixo') {
-            const [tasks] = await pool.query("SELECT * FROM tasks ORDER BY ordem ASC")
+            const [tasks] = await pool.query("SELECT * FROM tasks ORDER BY FIELD(prioridade, 'alta', 'media', 'baixa'), ordem ASC")
             const currentIndex = tasks.findIndex(t => t.id.toString() === id)
             
             if (currentIndex < tasks.length - 1) {
@@ -137,9 +151,41 @@ app.put('/tasks/:id', async (req, res) => {
                 status: rows[0].status,
                 done: rows[0].done === 1,
                 ordem: rows[0].ordem,
+                prioridade: rows[0].prioridade,
+                prazo: rows[0].prazo,
                 data_criacao: rows[0].created_at,
                 data_conclusao: rows[0].data_conclusao
             } : {})
+        }
+        
+        if (prioridade !== undefined || prazo !== undefined) {
+            const updates = []
+            const values = []
+            if (prioridade !== undefined) {
+                updates.push("prioridade = ?")
+                values.push(prioridade)
+            }
+            if (prazo !== undefined) {
+                updates.push("prazo = ?")
+                values.push(prazo || null)
+            }
+            values.push(id)
+            await pool.query(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`, values)
+            
+            const [rows] = await pool.query("SELECT * FROM tasks WHERE id = ?", [id])
+            const row = rows[0]
+            return res.json({
+                id: row.id.toString(),
+                titulo: row.titulo,
+                descricao: row.descricao,
+                status: row.status,
+                done: row.done === 1,
+                ordem: row.ordem,
+                prioridade: row.prioridade,
+                prazo: row.prazo,
+                data_criacao: row.created_at,
+                data_conclusao: row.data_conclusao
+            })
         }
         
         if (status) {
