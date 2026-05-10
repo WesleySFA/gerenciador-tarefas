@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,42 +7,104 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="app">
-<header>
-<h1>Gerenciador de Tarefas</h1>
-<p>Organize suas atividades</p>
-</header>
-<div class="search-box">
-<input id="busca" placeholder="Buscar tarefas..." oninput="filtrarBusca()">
-</div>
-<section class="form">
-<input id="titulo" placeholder="Título da tarefa">
-<input id="descricao" placeholder="Descrição da tarefa">
-<div class="form-row">
-<select id="prioridade">
-<option value="baixa">Prioridade Baixa</option>
-<option value="media" selected>Prioridade Média</option>
-<option value="alta">Prioridade Alta</option>
-</select>
-<input type="date" id="prazo" placeholder="Prazo">
-</div>
-<select id="status">
-<option value="pendente">Pendente</option>
-<option value="andamento">Em Andamento</option>
-<option value="concluida">Concluída</option>
-</select>
-<button onclick="criar()">Adicionar tarefa</button>
-</section>
-<div class="filters">
-<button class="filter-btn active" data-filter="all">Todas</button>
-<button class="filter-btn" data-filter="pendente">Pendente</button>
-<button class="filter-btn" data-filter="andamento">Em Andamento</button>
-<button class="filter-btn" data-filter="concluida">Concluída</button>
-</div>
-<section>
-<h2>Minhas tarefas <span id="contador"></span></h2>
-<ul id="lista"></ul>
-</section>
+<div class="app" id="app">
+  <header>
+    <h1>Gerenciador de Tarefas</h1>
+    <p>Organize suas atividades</p>
+  </header>
+
+  <div id="auth-section">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="showAuthForm('login')">Entrar</button>
+      <button class="auth-tab" onclick="showAuthForm('register')">Cadastrar</button>
+    </div>
+    <div id="auth-login" class="auth-form">
+      <input id="login-email" type="email" placeholder="Email" autocomplete="email">
+      <input id="login-senha" type="password" placeholder="Senha" autocomplete="current-password">
+      <button onclick="login()">Entrar</button>
+      <p class="auth-error" id="login-error"></p>
+    </div>
+    <div id="auth-register" class="auth-form" style="display:none">
+      <input id="register-nome" placeholder="Nome">
+      <input id="register-email" type="email" placeholder="Email" autocomplete="email">
+      <input id="register-senha" type="password" placeholder="Senha" autocomplete="new-password">
+      <button onclick="register()">Cadastrar</button>
+      <p class="auth-error" id="register-error"></p>
+    </div>
+  </div>
+
+  <div id="tasks-section" style="display:none">
+    <div class="user-header">
+      <span>Olá, <strong id="user-name"></strong>!</span>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="list" onclick="toggleView('list')">📋 Lista</button>
+      <button class="view-btn" data-view="kanban" onclick="toggleView('kanban')">📊 Quadro</button>
+    </div>
+
+    <div class="search-box">
+      <input id="busca" placeholder="Buscar tarefas..." oninput="filtrarBusca()">
+    </div>
+
+    <section class="form">
+      <input id="titulo" placeholder="Título da tarefa">
+      <input id="descricao" placeholder="Descrição da tarefa">
+      <div class="form-row">
+        <select id="prioridade">
+          <option value="baixa">Prioridade Baixa</option>
+          <option value="media" selected>Prioridade Média</option>
+          <option value="alta">Prioridade Alta</option>
+        </select>
+        <input type="date" id="prazo" placeholder="Prazo">
+      </div>
+      <select id="status">
+        <option value="pendente">Pendente</option>
+        <option value="andamento">Em Andamento</option>
+        <option value="concluida">Concluída</option>
+      </select>
+      <button onclick="criar()">Adicionar tarefa</button>
+    </section>
+
+    <div class="filters" id="list-filters">
+      <button class="filter-btn active" data-filter="all">Todas</button>
+      <button class="filter-btn" data-filter="pendente">Pendente</button>
+      <button class="filter-btn" data-filter="andamento">Em Andamento</button>
+      <button class="filter-btn" data-filter="concluida">Concluída</button>
+    </div>
+
+    <section id="list-view">
+      <h2>Minhas tarefas <span id="contador"></span></h2>
+      <ul id="lista"></ul>
+    </section>
+
+    <section id="kanban-view" style="display:none">
+      <div class="kanban-board">
+        <div class="kanban-column" data-status="pendente" ondrop="dropTask(event)" ondragover="allowDrop(event)" ondragleave="dragLeaveColumn(event)">
+          <div class="kanban-header pendente">
+            <span>📋 Pendente</span>
+            <span class="kanban-count" id="count-pendente">0</span>
+          </div>
+          <div class="kanban-list" id="kanban-pendente"></div>
+        </div>
+        <div class="kanban-column" data-status="andamento" ondrop="dropTask(event)" ondragover="allowDrop(event)" ondragleave="dragLeaveColumn(event)">
+          <div class="kanban-header andamento">
+            <span>⏳ Em Andamento</span>
+            <span class="kanban-count" id="count-andamento">0</span>
+          </div>
+          <div class="kanban-list" id="kanban-andamento"></div>
+        </div>
+        <div class="kanban-column" data-status="concluida" ondrop="dropTask(event)" ondragover="allowDrop(event)" ondragleave="dragLeaveColumn(event)">
+          <div class="kanban-header concluida">
+            <span>✅ Concluída</span>
+            <span class="kanban-count" id="count-concluida">0</span>
+          </div>
+          <div class="kanban-list" id="kanban-concluida"></div>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
 <script src="script.js"></script>
 </body>
